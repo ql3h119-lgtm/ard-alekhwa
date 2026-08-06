@@ -2,64 +2,28 @@ name: Build APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
+  build-android:
+    name: Build for Android
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    
-    - name: Setup Java 17
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    
-    - name: Install system dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          git zip unzip openjdk-17-jdk python3-pip \
-          autoconf libtool pkg-config zlib1g-dev \
-          libncurses-dev libncursesw5-dev libtinfo-dev \
-          cmake libffi-dev libssl-dev build-essential \
-          ccache libltdl-dev
-    
-    - name: Install Python dependencies
-      run: |
-        pip install --upgrade pip
-        pip install --upgrade Cython==0.29.33 virtualenv
-        pip install --upgrade buildozer
-    
-    - name: Cache Buildozer global directory
-      uses: actions/cache@v3
-      with:
-        path: .buildozer_global
-        key: buildozer-global-${{ hashFiles('buildozer.spec') }}
-    
-    - name: Cache Buildozer directory
-      uses: actions/cache@v3
-      with:
-        path: .buildozer
-        key: ${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-    
-    - name: Build APK with Buildozer
-      run: |
-        export BUILDOZER_ALLOW_ROOT=1
-        yes | buildozer -v android debug
-    
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ard-alekhwa-apk
-        path: bin/*.apk
-        retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          buildozer_version: stable
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ard-alekhwa-apk
+          path: ${{ steps.buildozer.outputs.filename }}
+          retention-days: 30
